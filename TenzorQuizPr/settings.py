@@ -22,19 +22,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 #'django-insecure-8ym0-%qo3wedcc2m@2)$um*=qe@@@f)7!xdo_#^dwa^3hc2r5^'
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", default='django-insecure-8ym0-%qo3wedcc2m@2)$um*=qe@@@f)7!xdo_#^dwa^3hc2r5^')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #
-DEBUG = bool(os.environ.get("DEBUG", default=0))
+DEBUG = bool(os.environ.get("DEBUG", default=1))
 
 #
-ALLOWED_HOSTS = str(os.environ.get("DJANGO_ALLOWED_HOSTS")).split(" ")
+ALLOWED_HOSTS = str(os.environ.get("DJANGO_ALLOWED_HOSTS", default='127.0.0.1')).split(" ")
 
 
 # Application definition
 
 INSTALLED_APPS = [
+     'main',
+    'games',
+    'news',
+    'teams',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

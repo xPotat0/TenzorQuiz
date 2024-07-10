@@ -1,6 +1,9 @@
 # Достаём питон версии 3.9.9
 FROM python:3.9.9-slim-buster
 
+# Рабочая директория
+WORKDIR /usr/src/TenzorQuiz
+
 # Постановление переменных среды
 # Предотвращает написание питоном pyc файлов на диск
 ENV PYTHONDONTWRITEBYTECODE 1
