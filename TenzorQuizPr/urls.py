@@ -16,6 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.routers import SimpleRouter
+import main.views
+
+router = SimpleRouter()
+
+router.register(r'teamsAPI', main.views.TeamsViewSet)
+router.register(r'gamesAPI', main.views.GamesViewSet)
+router.register(r'newsAPI', main.views.NewsViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,4 +31,6 @@ urlpatterns = [
     path('news/', include('news.urls')),
     path('teams/', include('teams.urls')),
     path('games/', include('games.urls')),
-]
+    ]
+
+urlpatterns += router.urls
