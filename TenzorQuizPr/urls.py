@@ -21,9 +21,9 @@ import main.views
 
 router = SimpleRouter()
 
-router.register(r'teamsAPI', main.views.TeamsViewSet)
-router.register(r'gamesAPI', main.views.GamesViewSet)
-router.register(r'newsAPI', main.views.NewsViewSet)
+#router.register(r'api/v1/teams', main.views.TeamsAPIView)
+#router.register(r'api/v1/games', main.views.GamesViewSet)
+#router.register(r'apu/v1/news', main.views.NewsViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,6 +31,9 @@ urlpatterns = [
     path('news/', include('news.urls')),
     path('teams/', include('teams.urls')),
     path('games/', include('games.urls')),
+    path('api/v1/teams/', main.views.TeamsAPIView.as_view()),
+    path('api/v1/games/', main.views.GamesAPIView.as_view()),
+    path('api/v1/games/<int:pk>/', main.views.GamesAPIView.as_view()),
     ]
 
 urlpatterns += router.urls
