@@ -31,11 +31,19 @@ class GamesAPIView(APIView):
             
             return Response({'Status': 'Accepted', 'Content': serializers.GamesSerializer(instance).data})
 
-        games = models.Game.objects.all().only("name")
+        games = models.Game.objects.all()
         content = serializers.GamesSerializer(games, many=True).data
-        print(content)
         for game in content:
-            game["AAAAAAAA"] = [{"aaaaaaaaa": "bbbb"}]
+            ques_list = []
+            team_list = []
+            for ques in game["questions"]:
+                ques_cont = serializers.QuestionsSerializer(models.Question.objects.get(pk=ques))
+                ques_list.append(ques_cont.data)
+            for team in game["teams"]:
+                team_cont = serializers.TeamsSerializer(models.Team.objects.get(pk=team))
+                team_list.append(team_cont.data)
+            game['questions'] = ques_list
+            game['teams'] = team_list
         return Response({'Status': 'Accepted', 'Content': content})
     
 
