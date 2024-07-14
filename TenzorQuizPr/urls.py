@@ -16,28 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter
+
 import main.views
+from games.urls import urlpatterns as games_url
+from teams.urls import urlpatterns as teams_url
+from news.urls import urlpatterns as news_url
+
 from rest_framework.schemas import get_schema_view
 from django.views.generic import TemplateView
 
-router = SimpleRouter()
-
-#router.register(r'api/v1/teams', main.views.TeamsAPIView)
-#router.register(r'api/v1/games', main.views.GamesViewSet)
-#router.register(r'apu/v1/news', main.views.NewsViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api_schema', get_schema_view(title='API schema', description='List of API\'s'), name='api_schema'),
     path('swagger-ui/', TemplateView.as_view(template_name='docs.html', extra_context={'schema_url':'api_schema'}), name='swagger-ui'),
     path('', include('main.urls')),
-    path('news/', include('news.urls')),
-    path('teams/', include('teams.urls')),
-    path('games/', include('games.urls')),
-    path('api/v1/teams/', main.views.TeamsAPIView.as_view()),
-    path('api/v1/games/', main.views.GamesAPIView.as_view()),
-    path('api/v1/games/<int:pk>/', main.views.GamesAPIView.as_view()),
     ]
 
-urlpatterns += router.urls
+urlpatterns += games_url
+urlpatterns += teams_url
+urlpatterns += news_url

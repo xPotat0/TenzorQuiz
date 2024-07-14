@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Team, Game, News, User, Question, TeamQuestionAnswer
+from .models import User, UserTeam
 # Register your models here.
 
-modelsToAdd = [Team, Game, News, User, Question, TeamQuestionAnswer]
+modelsToAdd = [User, UserTeam]
 
 admin.site.register(modelsToAdd)
