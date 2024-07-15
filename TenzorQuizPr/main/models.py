@@ -1,7 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from teams.models import Team
-
 
 class User(models.Model):
     class Role(models.IntegerChoices):
@@ -22,3 +20,4 @@ class User(models.Model):
 class UserTeam(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
+

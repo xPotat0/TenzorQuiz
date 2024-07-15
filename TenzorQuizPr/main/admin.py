@@ -5,3 +5,4 @@ from .models import User, UserTeam
 modelsToAdd = [User, UserTeam]
 
 admin.site.register(modelsToAdd)
+
