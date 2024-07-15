@@ -30,7 +30,7 @@ def decode_id(content):
         _content['teams'] = team_list
         return _content
 
-# Create your views here.
+
 class GamesAPIView(CreateAPIView):
     queryset = Game.objects.all()
 
@@ -42,12 +42,19 @@ class GamesAPIView(CreateAPIView):
 
     
     def get(self, requset):   
+        """
+        Get list of all games
+        """
+
         games = Game.objects.all()
         content = GamesSerializer(games, many=True).data
         return Response(content)
     
 
     def post(self, request):
+        """
+        Create game. Should transfer to .../games/{id}/ques/
+        """
         serializer = GamesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -55,8 +62,27 @@ class GamesAPIView(CreateAPIView):
         return Response(serializer.data)
 
 
+class SingleGameAPIView(RetrieveAPIView):
+    queryset = Game.objects.all()
+    serializer_class = SingleGameSerializer
 
+    def get(self, requset, *args, **kwargs):   
+        """Get single game with all fields"""
+        pk = kwargs.get('pk', None)
+        try:
+            game = Game.objects.get(id=pk)
+        except:
+            return Response({'error': 'Object not found'})
+            
+        content = SingleGameSerializer(game).data
+
+        content = decode_id(content)
+        return Response(content)
+    
     def put(self, request, *args, **kwargs):
+        """
+        Change existed game by id
+        """
         pk = kwargs.get('pk', None)
         if not pk:
             return Response({'error': "Method PUT no allowed"})
@@ -71,29 +97,13 @@ class GamesAPIView(CreateAPIView):
         return Response(serializer.data)
 
 
-class SingleGameAPIView(RetrieveAPIView):
-    queryset = Game.objects.all()
-    serializer_class = SingleGameSerializer
-
-    def get(self, requset, *args, **kwargs):   
-        pk = kwargs.get('pk', None)
-        try:
-            game = Game.objects.get(id=pk)
-        except:
-            return Response({'error': 'Object not found'})
-            
-        content = SingleGameSerializer(game).data
-
-        content = decode_id(content)
-        return Response(content)
-
-
     
 class QuestionsAPIView(CreateAPIView):
     queryset = Game.objects.all()
     serializer_class = QuestionsSerializer
 
     def post(self, request, *args, **kwargs):
+        """Create question and automaticly add to current game"""
         game_id = kwargs.get('game_id', None)
 
         if not game_id:
@@ -116,7 +126,7 @@ class QuestionsAPIView(CreateAPIView):
         return Response({'New question created': ques_serializer.data})
     
 
-class PlayGameAPIView(UpdateAPIView):
+class PlayGameAPIView(CreateAPIView):
     queryset = Game.objects.all()
     serializer_class = TeamQuestionAnswerSerializer
 
@@ -124,8 +134,9 @@ class PlayGameAPIView(UpdateAPIView):
         Game.objects.filter(pk=GamesSerializer(game).data['id']).update(is_over=True)
         return 
 
-    #Creating Teams X Questions records in Team question answer table
+
     def post(self, request, *args, **kwargs):
+        """Change team's answer. If there is no object of answer then create one"""
         game_id = kwargs.get('game_id', None)
         if not game_id:
             return Response({'error': 'Method PUT no allowed'})
