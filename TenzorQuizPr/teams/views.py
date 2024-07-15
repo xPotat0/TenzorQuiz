@@ -1,14 +1,17 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
-import main.models as models
-import main.serializers as serializers
+from .models import Team
+from .serializers import TeamsSerializer
 
 # Create your views here.
-class TeamsAPIView(APIView):
+class TeamsAPIView(ListAPIView):
+    queryset = Team.objects.all()
+    serializer_class = TeamsSerializer
     def getAll():
-        return Response({'Status': 'Accepted', 'Content': list(models.Team.objects.all().values())})
+        return Response({'Status': 'Accepted', 'Content': list(Team.objects.all().values())})
 
     def get(self, request):
         if True:

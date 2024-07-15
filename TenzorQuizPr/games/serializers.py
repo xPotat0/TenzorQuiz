@@ -5,7 +5,12 @@ from games.models import Game, Question, TeamQuestionAnswer
 class GamesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ('__all__')
+        fields = ['id', 'name', 'description', 'date']
+
+class SingleGameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = '__all__'
 
 class QuestionsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,4 +20,4 @@ class QuestionsSerializer(serializers.ModelSerializer):
 class TeamQuestionAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamQuestionAnswer
-        fields = '__all__'
+        fields = ['team', 'question', 'is_correct']
