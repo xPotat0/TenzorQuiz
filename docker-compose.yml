@@ -17,8 +17,9 @@ services:
     image: postgres:15
     volumes:
       - postgres_data:\usr\src\TenzorQuiz\data\
+    user: postgres
     environment:
-      - POSTGRES_USER=potato
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=db
 
