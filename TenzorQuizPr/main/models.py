@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from teams.models import Team
 
 class User(models.Model):
     class Role(models.IntegerChoices):
