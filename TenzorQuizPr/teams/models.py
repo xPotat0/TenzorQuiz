@@ -1,18 +1,23 @@
 from django.db import models
 
-# Create your models here.
+from main.models import User
+
+
 class Team(models.Model):
-    name = models.CharField(max_length=50)
-    description = models.TextField(blank=True, default='')
-    creation_date = models.DateTimeField(auto_now_add=True)
-    captain_id = models.IntegerField(blank=True, null=True)
-    rating = models.FloatField(default=0.0, blank=True)
+    team_name = models.CharField(max_length=100, unique=True)
+    team_desc = models.TextField(blank=True, default='')
+    creation_date = models.DateField(auto_now_add=True)
+    captain_id = models.IntegerField(blank=True, unique=True)
+    rating = models.IntegerField(default=0, blank=True)
+    points = models.FloatField(default=0.0, blank=True)
     is_available = models.BooleanField(default=True)
-    played_games_count = models.IntegerField(default=0, blank=True)
-    members_count = models.IntegerField(default=0, blank=True)
+    played_games = models.IntegerField(default=0, blank=True)
+    # members_count = models.IntegerField(default=0, blank=True)
+    team_members = models.ManyToManyField(User, related_name="team_members")
+
+    def get_captain_name(self):
+        user = User.objects.get(pk=self.captain_id)
+        return user.full_name
 
     class Meta:
-        ordering = ['-creation_date']
-
-    def __str__(self):
-        return self.name
+        ordering = ['-points']

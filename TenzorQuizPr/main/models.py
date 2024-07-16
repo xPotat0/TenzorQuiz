@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from teams.models import Team
 from django.contrib.auth.models import AbstractUser
 
 class User(models.Model):
@@ -18,10 +17,6 @@ class User(models.Model):
     def __str__(self):
         return self.full_name
 
-
-class UserTeam(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
 
 class LoginUser(models.Model):
      login = models.CharField(max_length=255)
