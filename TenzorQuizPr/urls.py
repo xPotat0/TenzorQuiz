@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-import main.views
+from main.urls import urlpatterns as main_url
 from games.urls import urlpatterns as games_url
 from teams.urls import urlpatterns as teams_url
 from news.urls import urlpatterns as news_url
@@ -33,6 +33,7 @@ urlpatterns = [
     path('', include('main.urls')),
     ]
 
+urlpatterns += main_url
 urlpatterns += games_url
 urlpatterns += teams_url
 urlpatterns += news_url
