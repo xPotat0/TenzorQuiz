@@ -14,7 +14,7 @@ class Game(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, default='')
     date = models.DateTimeField()
-    is_over = models.BooleanField(default=False)
+    is_over = models.BooleanField(default=False)#Charfield(active/finished/planned)
     questions = models.ManyToManyField(Question, blank=True)
     teams = models.ManyToManyField(Team, blank=True)
 
