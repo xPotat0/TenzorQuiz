@@ -18,7 +18,7 @@ class TeamsSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
 
     class Meta:
-        model: Team
+        model = Team
         fields = ('team_id', 'team_name')
 
 
@@ -56,8 +56,8 @@ class TeamUpdateSerializer(serializers.ModelSerializer):
 
 class TeamSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
-    # team_name = serializers.CharField(source='name')
-    # team_desc = serializers.CharField(source='description')
+    team_name = serializers.CharField()
+    team_desc = serializers.CharField()
     team_points = serializers.FloatField(source='points')
     team_rating = serializers.IntegerField(source='rating')
     captain_name = serializers.CharField(source='get_captain_name', read_only=True)
