@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -151,7 +152,7 @@ REST_FRAMEWORK = {
     )
 }
 
-AUTH_USER_MODEL = 'main.User'
+#AUTH_USER_MODEL = 'main.User'
 CORS_ALLOW_CREDENTIALS = True
 
 

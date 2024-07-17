@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.permissions import AllowAny
+
 from .serializers import TeamSerializer, TeamListSerializer, TeamCreateSerializer, TeamUpdateSerializer, \
     TeamJoinSerializer
 from teams.models import Team
@@ -12,6 +14,13 @@ from teams.models import Team
 
 class TeamsListAPIView(APIView):
     queryset = Team.objects.all()
+
+
+
+
+    permission_classes = [AllowAny]
+
+
 
     @swagger_auto_schema(
         operation_description="Получение списка всех команд в порядке убывания набранных очков",
@@ -37,6 +46,12 @@ class TeamsListAPIView(APIView):
 
 class TeamAPIView(APIView):
     queryset = Team.objects.all()
+
+
+    permission_classes = [AllowAny]
+
+
+
 
     @swagger_auto_schema(
         operation_description="Получение информации о команде по ID",
@@ -101,7 +116,7 @@ class TeamAPIView(APIView):
     responses={200: TeamJoinSerializer()}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, AllowAny])
 def join_team(request, *args, **kwargs):
     pk = kwargs.get("pk", None)
     if not pk:

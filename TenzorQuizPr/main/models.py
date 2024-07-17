@@ -20,7 +20,7 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(models.Model):
     class Role(models.IntegerChoices):
         PLAYER = 0, _('Участник')
         MODERATOR = 1, _('Ведущий')
@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField(max_length=100, unique=True)
     full_name = models.CharField(max_length=100)
+    password = models.CharField()
     gender = models.CharField(
         max_length=1,
         choices=Gender.choices,
