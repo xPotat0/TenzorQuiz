@@ -37,13 +37,27 @@ schema_view = get_schema_view(
     public=True,
 )
 
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Quiz API",
+        default_version='v1',
+        description="API documentation for your project",
+    ),
+    public=True,
+)
+
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('api_schema', get_schema_view(title='API schema', description='List of API\'s'), name='api_schema'),
-    # path('swagger-ui/', TemplateView.as_view(template_name='docs.html', extra_context={'schema_url':'api_schema'}), name='swagger-ui'),
-    path('swagger-ui/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('', include('main.urls')),
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    
     ]
 
 urlpatterns += main_url

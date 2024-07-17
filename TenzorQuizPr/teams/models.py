@@ -21,3 +21,9 @@ class Team(models.Model):
 
     class Meta:
         ordering = ['-points']
+
+
+
+class UserTeam(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
