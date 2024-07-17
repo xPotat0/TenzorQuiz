@@ -11,10 +11,14 @@ class Question(models.Model):
         return self.name
 
 class Game(models.Model):
+    choices = ( ('active', 'active'),
+                ('finished', 'finished'),
+                ('planned', 'planned'))
+
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, default='')
     date = models.DateTimeField()
-    is_over = models.BooleanField(default=False)#Charfield(active/finished/planned)
+    is_over = models.CharField(choices=choices, default='planned')
     questions = models.ManyToManyField(Question, blank=True)
     teams = models.ManyToManyField(Team, blank=True)
 

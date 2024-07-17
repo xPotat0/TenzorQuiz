@@ -17,7 +17,12 @@ class QuestionsSerializer(serializers.ModelSerializer):
         model = Question
         fields = '__all__'
 
+class DeleteQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields =['id']
+
 class TeamQuestionAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamQuestionAnswer
-        fields = ['team', 'question', 'is_correct']
+        fields = '__all__'
