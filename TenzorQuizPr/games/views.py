@@ -14,9 +14,12 @@ from json import loads
 
 from .models import Game, Question, TeamQuestionAnswer
 from teams.models import Team
+from main.models import User
 
-from .serializers import GamesSerializer, SingleGameSerializer, QuestionsSerializer, TeamQuestionAnswerSerializer, DeleteQuestionSerializer
+from .serializers import GamesSerializer, SingleGameSerializer, QuestionsSerializer, TeamQuestionAnswerSerializer, DeleteQuestionSerializer, TeamToGameSerializer
 from teams.serializers import TeamsSerializer
+from main.serializers import UserSerializer
+
 
 def decode_id(content):
         _content = content
@@ -56,7 +59,7 @@ class GamesAPIView(CreateAPIView):
 
     def post(self, request):
         """
-        Создание игры. Должно переводить в  .../games/{id}/ques/
+        Создание игры. Должно переводить в  .../games/{game_id}/ques/
         """
         serializer = GamesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -80,7 +83,7 @@ class SingleGameAPIView(RetrieveAPIView):
 
     def get(self, requset, *args, **kwargs):   
         """Получение одной игры со всеми полями"""
-        pk = kwargs.get('pk', None)
+        pk = kwargs.get('game_id', None)
         try:
             game = Game.objects.get(id=pk)
         except:
@@ -95,7 +98,7 @@ class SingleGameAPIView(RetrieveAPIView):
         """
         Изменить существующую игру по ID
         """
-        pk = kwargs.get('pk', None)
+        pk = kwargs.get('game_id', None)
         if not pk:
             return Response({'error': "Method PUT no allowed"})
         try:
@@ -109,11 +112,10 @@ class SingleGameAPIView(RetrieveAPIView):
         return Response(serializer.data)
 
 
-    
 class QuestionsAPIView(CreateAPIView):
     queryset = Game.objects.all()
-    authentication_classes = [SessionAuthentication, BaseAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [SessionAuthentication, BaseAuthentication]
+    permission_classes = [AllowAny]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -164,15 +166,13 @@ class QuestionsAPIView(CreateAPIView):
         
         try:
             decoded_request = loads(request.body.decode('utf-8'))
-            ques = Question.objects.get(pk=decoded_request['id'])
+            ques = Question.objects.get(pk=decoded_request['ques_id'])
         except:
             return Response({'error': 'No such question'}, status=status.HTTP_404_NOT_FOUND)
         
         ques.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
         
-
-    
 
 class PlayGameAPIView(CreateAPIView):
     queryset = TeamQuestionAnswer.objects.all()
@@ -229,3 +229,61 @@ class PlayGameAPIView(CreateAPIView):
         obj, created = TeamQuestionAnswer.objects.update_or_create(game=game, team=team, question=question, defaults={'is_correct': decoded_request['is_correct']})
         dat = TeamQuestionAnswerSerializer(obj).data
         return Response(dat)
+
+
+class GameAddTeamAPIView(CreateAPIView):
+    queryset = Team.objects.all()
+    serializer_class = TeamToGameSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        """Записать команду на игру"""
+        game_id = kwargs.get('game_id', None)
+
+        if not game_id:
+            return Response({'error': 'Method PUT no allowed'})
+
+        try:
+            game = Game.objects.get(id=game_id)
+        except:
+            return Response({'error': 'Game not exists'}, status=status.HTTP_404_NOT_FOUND)
+        
+        decoded_request = loads(request.body.decode('utf-8'))
+        user_id = decoded_request['user_id']
+        
+        try:
+            team = Team.objects.get(pk=user_id)
+        except:
+            return Response({'error': 'User does not have team'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+        game.teams.add(team)
+        game.save()
+
+        return Response({'status': 'success'})
+    
+    @swagger_auto_schema(
+        request_body=TeamToGameSerializer,
+        responses={204: TeamToGameSerializer}
+    )
+    def delete(self, request, *args, **kwargs):
+        """Удалить команду из игры"""
+        game_id = kwargs.get('game_id', None)
+
+        if not game_id:
+            return Response({'error': 'Method PUT no allowed'})
+
+        try:
+            game = Game.objects.get(id=game_id)
+        except:
+            return Response({'error': 'Game not exists'}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            decoded_request = loads(request.body.decode('utf-8'))
+            team = Team.objects.get(pk=decoded_request['user_id'])
+        except:
+            return Response({'error': 'Game does not have team'}, status=status.HTTP_404_NOT_FOUND)
+        
+        game.teams.remove(team)
+        return Response(status=status.HTTP_204_NO_CONTENT)
