@@ -183,6 +183,16 @@ class PlayGameAPIView(CreateAPIView):
         Game.objects.filter(pk=GamesSerializer(game).data['id']).update(is_over=True)
         return 
 
+    def getTeamsPoints(game, answers):
+        teams_id = {}
+        for team in SingleGameSerializer(game).data['teams']:
+            teams_id[team] = 0
+        
+        for record in answers:
+            teams_id[record['team']] += record['score']
+
+        return teams_id
+
     def get(self, request, *args, **kwargs):
         """Получение всех записанных ответов команд"""
         game_id = kwargs.get('game_id', None)
@@ -193,10 +203,11 @@ class PlayGameAPIView(CreateAPIView):
             game = Game.objects.get(id=game_id)
         except:
             return Response({'error': 'Game not exists'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         answers = TeamQuestionAnswer.objects.filter(game=game)
         content = TeamQuestionAnswerSerializer(answers, many=True).data
-        print(content)
+
+        content.append({'scores': PlayGameAPIView.getTeamsPoints(game, content)})
 
         return Response(content)
 
