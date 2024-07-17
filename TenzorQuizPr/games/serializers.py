@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from games.models import Game, Question, TeamQuestionAnswer
+from teams.models import Team
+from main.models import User
 
 
 class GamesSerializer(serializers.ModelSerializer):
@@ -18,11 +20,18 @@ class QuestionsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DeleteQuestionSerializer(serializers.ModelSerializer):
+    ques_id = serializers.IntegerField()
     class Meta:
         model = Question
-        fields =['id']
+        fields =['ques_id']
 
 class TeamQuestionAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamQuestionAnswer
         fields = '__all__'
+
+class TeamToGameSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField()
+    class Meta:
+        model = User
+        fields = ['user_id']
