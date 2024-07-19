@@ -89,7 +89,7 @@ class GamesAPIView(CreateAPIView):
     permission_classes = [AllowAny]
     filter_backends = [filters.SearchFilter]
 
-
+ 
     def get_serializer_class(self):
         if self.request.method == 'GET' or self.request.method == 'POST':
             return GamesSerializer
