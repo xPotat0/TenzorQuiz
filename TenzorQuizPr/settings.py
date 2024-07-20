@@ -62,7 +62,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-
 ]
 
 ROOT_URLCONF = 'TenzorQuizPr.urls'
@@ -160,6 +159,12 @@ REST_FRAMEWORK = {
 #AUTH_USER_MODEL = 'main.User'
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+CORS_ALLOWED_ORIGINS = [
+    'http://80.87.196.57',
+    'http://localhost',
+]
 
 CORS_ALLOWED_ORIGINS = [
     'http://80.87.196.57',

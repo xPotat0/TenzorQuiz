@@ -151,6 +151,7 @@ class SingleGameAPIView(RetrieveAPIView):
             return checks[1]
         else:
             game = checks[0]
+
             
         content = SingleGameSerializer(game).data
 
@@ -169,6 +170,7 @@ class SingleGameAPIView(RetrieveAPIView):
             game = checks[0]
 
         serializer = GamesSerializer(data=request.data, instance=game)
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
@@ -241,7 +243,6 @@ class PlayGameAPIView(CreateAPIView):
         Game.objects.filter(pk=GamesSerializer(game).data['id']).update(is_over=True)
         return 
 
-
     def get(self, request, *args, **kwargs):
         """Получение всех записанных ответов команд"""
         checks = makeAllCheckes(kwargs, 'game_id', Game)
@@ -250,6 +251,7 @@ class PlayGameAPIView(CreateAPIView):
             return checks[1]
         else:
             game = checks[0]
+
 
         content = getTeamsPoints(game)
         return Response(content)
@@ -316,19 +318,13 @@ class GameAddTeamAPIView(CreateAPIView):
             return checks[1]
         else:
             game = checks[0]
+
         
         decoded_request = loads(request.body.decode('utf-8'))
         user_id = decoded_request['user_id']
         
-
-        try:
-            team = Team.objects.get(pk=user_id)
-        except:
-            return Response({'error': 'User does not have team'}, status=status.HTTP_404_NOT_FOUND)
-
-
-
         game.game_teams.add(team)
+
         game.save()
 
         return Response({'status': 'success'})
@@ -345,15 +341,17 @@ class GameAddTeamAPIView(CreateAPIView):
             return checks[1]
         else:
             game = checks[0]
+
         
         try:
             decoded_request = loads(request.body.decode('utf-8'))
             team = Team.objects.get(pk=decoded_request['user_id'])
         except:
             return Response({'error': 'Game does not have team'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         game.game_teams.remove(team)
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 
 #Сортировку игр сделать
+
