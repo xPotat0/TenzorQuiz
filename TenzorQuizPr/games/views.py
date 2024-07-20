@@ -322,9 +322,13 @@ class GameAddTeamAPIView(CreateAPIView):
         
         decoded_request = loads(request.body.decode('utf-8'))
         user_id = decoded_request['user_id']
-        
-        game.game_teams.add(team)
 
+        try:
+            team = Team.objects.get(pk=user_id)
+        except:
+            return Response({'error': 'User does not have team'}, status=status.HTTP_404_NOT_FOUND)
+            
+        game.game_teams.add(team)
         game.save()
 
         return Response({'status': 'success'})
