@@ -7,7 +7,7 @@ from main.models import User
 class GamesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ['id', 'name', 'description', 'date']
+        fields = ['id', 'game_name', 'game_description', 'game_date']
 
 class SingleGameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,7 +17,7 @@ class SingleGameSerializer(serializers.ModelSerializer):
 class QuestionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = ['id', 'question_name', 'question_description', 'question_correct_answer', 'question_weight']
 
 class DeleteQuestionSerializer(serializers.ModelSerializer):
     ques_id = serializers.IntegerField()
