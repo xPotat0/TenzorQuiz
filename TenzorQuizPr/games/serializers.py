@@ -31,7 +31,7 @@ class TeamQuestionAnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TeamToGameSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField()
+    team_id = serializers.IntegerField()
     class Meta:
-        model = User
-        fields = ['user_id']
+        model = Team
+        fields = ['team_id']

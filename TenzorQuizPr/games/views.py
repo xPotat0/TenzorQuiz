@@ -43,7 +43,11 @@ def decode_id(content):
 def checkGameStatus(game, needStatus):
     return SingleGameSerializer(game).data['game_status'] in needStatus
 
-def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, statuses = ['planned']):
+def checkUser(user_id, game):
+    creator_id = game.game_creator.id
+    return creator_id == user_id
+
+def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, statuses = ['planned'], user_id = False):
         obj_id = kwargs.get(attributeName, None)   
         if not obj_id:
             return (None, Response({'error': 'Method no allowed'}, status=status.HTTP_403_FORBIDDEN))
@@ -53,6 +57,12 @@ def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, 
         except:
             return (None, Response({'error': str(objModel) + ' not exists'}, status=status.HTTP_404_NOT_FOUND))
         
+        if user_id != False:
+            if user_id is None:
+                return (None, Response({'error': 'NO HEADER FOR JWT/USER_ID'}, status=status.HTTP_400_BAD_REQUEST))
+            if not checkUser(user_id, obj):
+                return (None, Response({'error': 'User is not game creator'}, status=status.HTTP_406_NOT_ACCEPTABLE))
+
         if checkGameForStatus:
             if not checkGameStatus(obj, statuses):
                 return (None, Response({'error': 'Cannot change already played/ing game'}, status=status.HTTP_406_NOT_ACCEPTABLE))
@@ -101,7 +111,6 @@ class GamesAPIView(CreateAPIView):
         """
         Получение списка всех игр
         """
-        
         search = request.query_params.get('search')
         order = request.query_params.get('ordering')
         page = request.query_params.get('page')
@@ -162,7 +171,9 @@ class SingleGameAPIView(RetrieveAPIView):
         """
         Изменить существующую игру по ID
         """
-        checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True)
+        user_id = request.headers.get('user_id')
+
+        checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True, user_id=user_id)
 
         if checks[1] != None:
             return checks[1]
@@ -350,7 +361,7 @@ class GameAddTeamAPIView(CreateAPIView):
         
         try:
             decoded_request = loads(request.body.decode('utf-8'))
-            team = Team.objects.get(pk=decoded_request['user_id'])
+            team = Team.objects.get(pk=decoded_request['team_id'])
         except:
             return Response({'error': 'Game does not have team'}, status=status.HTTP_404_NOT_FOUND)
 

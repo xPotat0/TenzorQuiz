@@ -1,5 +1,6 @@
 from django.db import models
 from teams.models import Team
+from main.models import User
 
 class Question(models.Model):
     question_name = models.CharField(max_length=100)
@@ -21,6 +22,7 @@ class Game(models.Model):
     game_status = models.CharField(choices=choices, default='planned')
     game_questions = models.ManyToManyField(Question, blank=True)
     game_teams = models.ManyToManyField(Team, blank=True)
+    game_creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         ordering = ['-game_date']
