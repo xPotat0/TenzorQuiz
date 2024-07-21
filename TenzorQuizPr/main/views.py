@@ -1,88 +1,138 @@
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 
-from .serializers import UserSerializer, LoginSerializer
+from .serializers import RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer
 from .models import User
 
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from django.contrib.auth import authenticate, login
 
 
-
-#User = get_user_model()
-
-
-class RegisterView(generics.CreateAPIView):
+class RegisterView(APIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
-    serializer_class = UserSerializer
+    serializer_class = RegisterSerializer
 
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        user = User.objects.get(username=response.data['username'])
-        refresh = RefreshToken.for_user(user)
+    @swagger_auto_schema(
+        operation_description="Регистрация нового пользователя",
+        request_body=RegisterSerializer,
+        responses={201: ''}
+    )
+    def post(self, request, *args, **kwargs):
+        # response = Response(data={"access_token": None,
+        #                           "user": None})
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user.access_token = str(refresh.access_token)
-        user.save()
 
-        response.data['refresh'] = str(refresh)
-        response.data['access'] = str(refresh.access_token)
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
+    @swagger_auto_schema(
+        operation_description="Регистрация нового пользователя",
+        request_body=CustomTokenObtainPairSerializer,
+        responses={201: openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                'user': openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'username': openapi.Schema(type=openapi.TYPE_STRING),
+                        'email': openapi.Schema(type=openapi.TYPE_STRING),
+                        'gender': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            })},
+    )
+    def post(self, request, *args, **kwargs):
+        response = Response(data={"access_token": None,
+                                  "user": None})
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tokens = serializer.validated_data['tokens']
+        auth_user = serializer.validated_data['user']
+
+        serializer = UserSerializer(auth_user)
+        refresh_token = tokens['refresh']
+        access_token = tokens['access']
         response.set_cookie(
             key='refresh_token',
-            value=str(refresh),
+            value=str(refresh_token),
             httponly=True,
-            secure=True,
-            samesite='Lax'
         )
-
+        response.data['access_token'] = str(access_token)
+        response.data['user'] = serializer.data
         return response
 
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    permission_classes = (AllowAny,)
+class RefreshTokenView(APIView):
+    serializer_class = TokenRefreshSerializer
+    permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        user = User.objects.get(login=request.data['username'])
-
-        user.access_token = response.data['access']
-        user.save()
-
+    @swagger_auto_schema(
+        operation_description="Обновление токенов",
+        responses={200: openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                'user': openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'username': openapi.Schema(type=openapi.TYPE_STRING),
+                        'email': openapi.Schema(type=openapi.TYPE_STRING),
+                        'gender': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            })},
+    )
+    def get(self, request, *args, **kwargs):
+        response = Response(data={"access_token": None,
+                                  "user": None})
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response(data={"detail": "Пользователь не авторизован"}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = self.serializer_class(data={'refresh': refresh_token})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        serializer = UserSerializer(user)
+        new_token = RefreshToken.for_user(user)
+        new_token.payload.update({'role': user.role})
         response.set_cookie(
             key='refresh_token',
-            value=response.data['refresh'],
+            value=str(new_token),
             httponly=True,
-            secure=True,
-            samesite='Lax'
         )
-
+        response.data['access_token'] = str(new_token.access_token)
+        response.data['user'] = serializer.data
         return response
 
 
-class LoginView(APIView):
-    queryset = User.objects.all()
-    permission_classes = (AllowAny,)
-    serializer_class = LoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        login_data = request.data
-
-        username = login_data.get('username')  # Проверка наличия ключа 'login'
-        password = login_data.get('password')
-
-
-
-        user = authenticate(username=username, password=password)
-        print(user)
-        if user is not None:
-            login(request, user)
-            # В этом месте можно создать и вернуть access_token и refresh_token
-            return Response({'message': 'Authentication successful'}, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+    @swagger_auto_schema(
+        responses={200: ''}
+    )
+    def post(self, request):
+        try:
+            response = Response(status=status.HTTP_205_RESET_CONTENT)
+            refresh_token = request.COOKIES.get('refresh_token')
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            response.delete_cookie('refresh_token')
+            return response
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
