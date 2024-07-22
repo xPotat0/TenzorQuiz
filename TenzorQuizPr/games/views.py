@@ -7,6 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authentication import SessionAuthentication, BaseAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
+from rest_framework.decorators import permission_classes
 from rest_framework.views import APIView
 from rest_framework.generics import UpdateAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.response import Response
@@ -43,11 +44,7 @@ def decode_id(content):
 def checkGameStatus(game, needStatus):
     return SingleGameSerializer(game).data['game_status'] in needStatus
 
-def checkUser(user_id, game):
-    creator_id = game.game_creator.id
-    return creator_id == user_id
-
-def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, statuses = ['planned'], user_id = False):
+def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, statuses = ['planned']):
         obj_id = kwargs.get(attributeName, None)   
         if not obj_id:
             return (None, Response({'error': 'Method no allowed'}, status=status.HTTP_403_FORBIDDEN))
@@ -57,11 +54,7 @@ def makeAllCheckes(kwargs, attributeName, objModel, checkGameForStatus = False, 
         except:
             return (None, Response({'error': str(objModel) + ' not exists'}, status=status.HTTP_404_NOT_FOUND))
         
-        if user_id != False:
-            if user_id is None:
-                return (None, Response({'error': 'NO HEADER FOR JWT/USER_ID'}, status=status.HTTP_400_BAD_REQUEST))
-            if not checkUser(user_id, obj):
-                return (None, Response({'error': 'User is not game creator'}, status=status.HTTP_406_NOT_ACCEPTABLE))
+
 
         if checkGameForStatus:
             if not checkGameStatus(obj, statuses):
@@ -96,7 +89,6 @@ def addScoreToTeams(game):
 
 class GamesAPIView(CreateAPIView):
     queryset = Game.objects.all()
-    permission_classes = [AllowAny]
     filter_backends = [filters.SearchFilter]
 
  
@@ -106,7 +98,7 @@ class GamesAPIView(CreateAPIView):
         else:
             return SingleGameSerializer
 
-    
+    @permission_classes([AllowAny])
     def get(self, request, *args, **kwargs):   
         """
         Получение списка всех игр
@@ -128,6 +120,7 @@ class GamesAPIView(CreateAPIView):
         return Response(content)
     
 
+    @permission_classes([IsAuthenticated])
     def post(self, request):
         """
         Создание игры. Должно переводить в  .../games/{game_id}/ques/
@@ -141,7 +134,6 @@ class GamesAPIView(CreateAPIView):
 
 class SingleGameAPIView(RetrieveAPIView):
     queryset = Game.objects.all()
-    permission_classes = [AllowAny]
 
     def get_serializer_class(self):
         if self.request.method == 'PUT':
@@ -151,7 +143,7 @@ class SingleGameAPIView(RetrieveAPIView):
         
 
 
-
+    @permission_classes([AllowAny])
     def get(self, requset, *args, **kwargs):   
         """Получение одной игры со всеми полями"""
         checks = makeAllCheckes(kwargs, 'game_id', Game)
@@ -167,13 +159,12 @@ class SingleGameAPIView(RetrieveAPIView):
         content = decode_id(content)
         return Response(content)
     
+    @permission_classes([IsAuthenticated])
     def put(self, request, *args, **kwargs):
         """
         Изменить существующую игру по ID
         """
-        user_id = request.headers.get('user_id')
-
-        checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True, user_id=user_id)
+        checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True)
 
         if checks[1] != None:
             return checks[1]
@@ -190,7 +181,7 @@ class SingleGameAPIView(RetrieveAPIView):
 class QuestionsAPIView(CreateAPIView):
     queryset = Game.objects.all()
     #authentication_classes = [SessionAuthentication, BaseAuthentication]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -209,16 +200,17 @@ class QuestionsAPIView(CreateAPIView):
             return checks[1]
         else:
             game = checks[0]
+        print(request.data)
 
-        ques_serializer = QuestionsSerializer(data=request.data)
-        ques_serializer.is_valid(raise_exception=True)
-        question = ques_serializer.save()
-
-
-        game.game_questions.add(question)
+        for ques in request.data:
+            ques_serializer = QuestionsSerializer(data=ques)
+            ques_serializer.is_valid(raise_exception=True)
+            question = ques_serializer.save()
+            game.game_questions.add(question)
+        
         game.save()
 
-        return Response(ques_serializer.data)
+        return Response(status=status.HTTP_200_OK)
     
 
 
@@ -248,12 +240,12 @@ class QuestionsAPIView(CreateAPIView):
 class PlayGameAPIView(CreateAPIView):
     queryset = TeamQuestionAnswer.objects.all()
     serializer_class = TeamQuestionAnswerSerializer
-    permission_classes = [AllowAny]
 
     def change_game_status(game):
         Game.objects.filter(pk=GamesSerializer(game).data['id']).update(is_over=True)
         return 
 
+    @permission_classes([AllowAny])
     def get(self, request, *args, **kwargs):
         """Получение всех записанных ответов команд"""
         checks = makeAllCheckes(kwargs, 'game_id', Game)
@@ -268,6 +260,7 @@ class PlayGameAPIView(CreateAPIView):
         return Response(content)
 
 
+    @permission_classes([IsAuthenticated])
     def post(self, request, *args, **kwargs):
         """Поменять ответ команды. Если объекта ответа нет в базе, то он создаётся"""
         checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True, statuses=['planned', 'active'])
@@ -319,7 +312,7 @@ class PlayGameAPIView(CreateAPIView):
 class GameAddTeamAPIView(CreateAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamToGameSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         """Записать команду на игру"""
@@ -335,7 +328,8 @@ class GameAddTeamAPIView(CreateAPIView):
         user_id = decoded_request['user_id']
         
         try:
-            team = Team.objects.get(pk=user_id)
+            team = Team.objects.get(captain_id=user_id)
+
         except:
             return Response({'error': 'User does not have team'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -367,7 +361,3 @@ class GameAddTeamAPIView(CreateAPIView):
 
         game.game_teams.remove(team)
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-
-#Сортировку игр сделать
-
