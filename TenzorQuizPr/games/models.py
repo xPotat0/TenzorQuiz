@@ -10,6 +10,9 @@ class Question(models.Model):
 
     def __str__(self):
         return self.question_name
+    
+    class Meta:
+        ordering = ['question_name']
 
 class Game(models.Model):
     choices = ( ('active', 'active'),
