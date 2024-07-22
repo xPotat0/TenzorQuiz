@@ -29,7 +29,7 @@ class RegisterView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(status=status.HTTP_201_CREATED)
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -37,7 +37,7 @@ class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     @swagger_auto_schema(
-        operation_description="Регистрация нового пользователя",
+        operation_description="Авторизация",
         request_body=CustomTokenObtainPairSerializer,
         responses={201: openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -123,6 +123,7 @@ class RefreshTokenView(APIView):
 
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
+
     @swagger_auto_schema(
         responses={200: ''}
     )

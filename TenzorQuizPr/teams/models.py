@@ -14,13 +14,14 @@ class Team(models.Model):
     played_games = models.IntegerField(default=0, blank=True)
     # members_count = models.IntegerField(default=0, blank=True)
     team_members = models.ManyToManyField(User, related_name="team_members")
+    # invitation_link = models.URLField(blank=True, default='')
 
     def get_captain_name(self):
         user = User.objects.get(pk=self.captain_id)
-        return user.full_name
+        return user.username
 
-    class Meta:
-        ordering = ['-points']
+    # class Meta:
+    #     ordering = ['-team_points']
 
 
 
