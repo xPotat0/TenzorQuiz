@@ -72,7 +72,7 @@ class LoginView(TokenObtainPairView):
             value=str(refresh_token),
             httponly=True,
             secure=False,
-            samesite='Lax',
+            samesite='None',
             max_age=7 * 24 * 60 * 60 * 1000
         )
         response.data['access_token'] = str(access_token)
@@ -119,7 +119,7 @@ class RefreshTokenView(APIView):
             value=str(new_token),
             httponly=True,
             secure=False,
-            samesite='Lax',
+            samesite='None',
             max_age=7 * 24 * 60 * 60 * 1000
         )
         response.data['access_token'] = str(new_token.access_token)
