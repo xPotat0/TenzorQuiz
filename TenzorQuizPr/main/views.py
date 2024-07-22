@@ -71,6 +71,9 @@ class LoginView(TokenObtainPairView):
             key='refresh_token',
             value=str(refresh_token),
             httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=7 * 24 * 60 * 60 * 1000
         )
         response.data['access_token'] = str(access_token)
         response.data['user'] = serializer.data
@@ -115,6 +118,9 @@ class RefreshTokenView(APIView):
             key='refresh_token',
             value=str(new_token),
             httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=7 * 24 * 60 * 60 * 1000
         )
         response.data['access_token'] = str(new_token.access_token)
         response.data['user'] = serializer.data
