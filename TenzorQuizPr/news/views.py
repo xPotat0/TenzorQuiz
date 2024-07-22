@@ -18,15 +18,16 @@ class NewsView(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_description="Получить список всех новостей",
-        responses={
-            200: openapi.Response(
-                description="Успешный ответ с списком новостей",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(type=openapi.TYPE_OBJECT, properties=NewsSerializer().fields)
+        responses={200: openapi.Response(
+            description="Успешный ответ с списком новостей",
+            schema=openapi.Schema(
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
                 )
             )
-        }
+        )}
     )
     def list(self, request, *args, **kwargs):
         """
@@ -40,7 +41,10 @@ class NewsView(viewsets.ModelViewSet):
         responses={
             201: openapi.Response(
                 description="Создана новая новость",
-                schema=NewsSerializer()
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
+                )
             ),
             403: openapi.Response(
                 description="Отказ в доступе. Только ведущие могут создавать новости."
@@ -60,7 +64,10 @@ class NewsView(viewsets.ModelViewSet):
         responses={
             200: openapi.Response(
                 description="Успешный ответ с информацией о новости",
-                schema=NewsSerializer()
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
+                )
             ),
             404: openapi.Response(
                 description="Новость не найдена"
@@ -79,7 +86,10 @@ class NewsView(viewsets.ModelViewSet):
         responses={
             200: openapi.Response(
                 description="Успешное обновление новости",
-                schema=NewsSerializer()
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
+                )
             ),
             404: openapi.Response(
                 description="Новость не найдена"
@@ -98,7 +108,10 @@ class NewsView(viewsets.ModelViewSet):
         responses={
             200: openapi.Response(
                 description="Успешное частичное обновление новости",
-                schema=NewsSerializer()
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
+                )
             ),
             404: openapi.Response(
                 description="Новость не найдена"
