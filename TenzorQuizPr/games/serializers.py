@@ -7,7 +7,7 @@ from main.models import User
 class GamesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ['id', 'game_name', 'game_description', 'game_date']
+        fields = ['id', 'game_name', 'game_description', 'game_date', 'game_status']
 
 class SingleGameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,7 +31,7 @@ class TeamQuestionAnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TeamToGameSerializer(serializers.ModelSerializer):
-    team_id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
     class Meta:
         model = Team
-        fields = ['team_id']
+        fields = ['user_id']
