@@ -23,7 +23,7 @@ class NewsView(viewsets.ModelViewSet):
                 description="Успешный ответ с списком новостей",
                 schema=openapi.Schema(
                     type=openapi.TYPE_ARRAY,
-                    items=NewsSerializer()
+                    items=openapi.Schema(type=openapi.TYPE_OBJECT, properties=NewsSerializer().fields)
                 )
             )
         }
