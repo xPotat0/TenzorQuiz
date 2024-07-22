@@ -23,14 +23,14 @@ class TeamsListAPIView(APIView):
     )
     def get(self, request):
         search = request.query_params.get('search')
-        order = request.query_params.get('ordering')
+        order = get_order(request)
         page = request.query_params.get('page')
         if search is None:
             search = ''
-        if order is None:
-            if order == 'creation_date':
-                order = '-creation_date'
-            order = '-points'
+        # if order is None:
+        #     if order == 'creation_date':
+        #         order = '-creation_date'
+        #     order = '-points'
         if page is None:
             page = 1
         page = int(page)
@@ -52,6 +52,19 @@ class TeamsListAPIView(APIView):
             team_repr = TeamSerializer(team)
             return Response(team_repr.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def get_order(request):
+    order = request.query_params.get('ordering')
+    if order is None or order == 'points':
+        return '-points'
+    elif order == 'creation_date':
+        return '-creation_date'
+    elif order == 'played_games':
+        return '-played_games'
+    elif order == 'team_name':
+        return order
+
 
 
 class TeamAPIView(APIView):

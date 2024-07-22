@@ -65,6 +65,7 @@ class TeamSerializer(serializers.ModelSerializer):
     team_captain_id = serializers.IntegerField(source='captain_id', read_only=True)
     team_captain_name = serializers.CharField(source='get_captain_name', read_only=True)
     team_members = MemberSerializer(many=True, read_only=True)
+    team_creation_date = serializers.DateField(source='creation_date', read_only=True)
 
     class Meta:
         model = Team
@@ -73,6 +74,7 @@ class TeamSerializer(serializers.ModelSerializer):
                   'team_captain_name',
                   'team_name',
                   'team_desc',
+                  'team_creation_date',
                   'team_points',
                   'team_rating',
                   'team_played_games',
@@ -81,7 +83,6 @@ class TeamSerializer(serializers.ModelSerializer):
 
 class TeamListSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
-    team_name = serializers.CharField(source='name', read_only=True)
     team_desc = serializers.CharField(source='description', read_only=True)
     team_played_games = serializers.IntegerField(source='played_games', read_only=True)
     team_points = serializers.FloatField(source='points', read_only=True)
