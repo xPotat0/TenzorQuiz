@@ -1,8 +1,7 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.response import Response
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -25,8 +24,6 @@ class RegisterView(APIView):
         responses={201: ''}
     )
     def post(self, request, *args, **kwargs):
-        # response = Response(data={"access_token": None,
-        #                           "user": None})
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -40,10 +37,15 @@ class LoginView(TokenObtainPairView):
     @swagger_auto_schema(
         operation_description="Авторизация",
         request_body=CustomTokenObtainPairSerializer,
-        responses={201: openapi.Schema(
+        responses={200: openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                'tokens': openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'refresh_token': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                    }),
                 'user': openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -57,8 +59,9 @@ class LoginView(TokenObtainPairView):
             })},
     )
     def post(self, request, *args, **kwargs):
-        response = Response(data={"access_token": None,
-                                  "user": None})
+        response = Response(data={
+            "tokens": {},
+            "user": None})
 
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -68,15 +71,20 @@ class LoginView(TokenObtainPairView):
         serializer = UserSerializer(auth_user)
         refresh_token = tokens['refresh']
         access_token = tokens['access']
-        response.set_cookie(
-            key='refresh_token',
-            value=str(refresh_token),
-            httponly=True,
-            secure=True,
-            samesite='None',
-            max_age=7 * 24 * 60 * 60 * 1000
-        )
-        response.data['access_token'] = str(access_token)
+        # response.set_cookie(
+        #     key='refresh_token',
+        #     value=str(refresh_token),
+        #     httponly=True,
+        #     secure=True,
+        #     samesite='None',
+        #     max_age=7 * 24 * 60 * 60 * 1000
+        # )
+        # response.data['refresh_token'] = str(refresh_token)
+        # response.data['access_token'] = str(access_token)
+        response.data['tokens'] = {
+            "refresh_token": str(refresh_token),
+            "access_token": str(access_token),
+        }
         response.data['user'] = serializer.data
         return response
 
@@ -90,7 +98,12 @@ class RefreshTokenView(APIView):
         responses={200: openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                'tokens': openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'refresh_token': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access_token': openapi.Schema(type=openapi.TYPE_STRING),
+                    }),
                 'user': openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -104,9 +117,13 @@ class RefreshTokenView(APIView):
             })},
     )
     def get(self, request, *args, **kwargs):
-        response = Response(data={"access_token": None,
-                                  "user": None})
-        refresh_token = request.COOKIES.get('refresh_token')
+        # response = Response(data={"access_token": None,
+        #                           "user": None})
+        response = Response(data={
+            "tokens": {},
+            "user": None})
+        # refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.query_params.get('token')
         if not refresh_token:
             return Response(data={"detail": "Пользователь не авторизован"}, status=status.HTTP_401_UNAUTHORIZED)
         serializer = self.serializer_class(data={'refresh': refresh_token})
@@ -119,15 +136,20 @@ class RefreshTokenView(APIView):
         serializer = UserSerializer(user)
         # new_token = RefreshToken.for_user(user)
         # new_token.payload.update({'role': user.role})
-        response.set_cookie(
-            key='refresh_token',
-            value=new_refresh_token,
-            httponly=True,
-            secure=True,
-            samesite='None',
-            max_age=7 * 24 * 60 * 60 * 1000
-        )
-        response.data['access_token'] = new_access_token
+        # response.set_cookie(
+        #     key='refresh_token',
+        #     value=new_refresh_token,
+        #     httponly=True,
+        #     secure=True,
+        #     samesite='None',
+        #     max_age=7 * 24 * 60 * 60 * 1000
+        # )
+        # response.data['refresh_token'] = new_refresh_token
+        # response.data['access_token'] = new_access_token
+        response.data['tokens'] = {
+            "refresh_token": new_refresh_token,
+            "access_token": new_access_token,
+        }
         response.data['user'] = serializer.data
         return response
 
@@ -136,15 +158,22 @@ class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "refresh_token": openapi.Schema(type=openapi.TYPE_STRING)
+            }
+        ),
         responses={200: ''}
     )
     def post(self, request):
         try:
             response = Response(status=status.HTTP_205_RESET_CONTENT)
-            refresh_token = request.COOKIES.get('refresh_token')
+            refresh_token = request.data.get('refresh_token')
+
             token = RefreshToken(refresh_token)
             token.blacklist()
-            response.delete_cookie('refresh_token')
+            # response.delete_cookie('refresh_token')
             return response
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
