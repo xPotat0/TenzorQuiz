@@ -83,13 +83,18 @@ def addScoreToTeams(game):
     for team_id, score in dict(scores['scores']).items():
         team = Team.objects.get(id=int(team_id))
         team.points += score
-        team.save(update_fields=['points'])
+        team.played_games += 1
+        team.save(update_fields=['points', 'played_games'])
+
+    
+
     return None
 
 
 class GamesAPIView(CreateAPIView):
     queryset = Game.objects.all()
     filter_backends = [filters.SearchFilter]
+    permission_classes = [AllowAny]
 
  
     def get_serializer_class(self):
@@ -98,7 +103,7 @@ class GamesAPIView(CreateAPIView):
         else:
             return SingleGameSerializer
 
-    @permission_classes([AllowAny])
+
     def get(self, request, *args, **kwargs):   
         """
         Получение списка всех игр
@@ -120,11 +125,13 @@ class GamesAPIView(CreateAPIView):
         return Response(content)
     
 
-    @permission_classes([IsAuthenticated])
-    def post(self, request):
+
+    def post(self, request, *args, **kwargs):
         """
         Создание игры. Должно переводить в  .../games/{game_id}/ques/
         """
+
+
         serializer = GamesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -134,6 +141,8 @@ class GamesAPIView(CreateAPIView):
 
 class SingleGameAPIView(RetrieveAPIView):
     queryset = Game.objects.all()
+    permission_classes = [AllowAny]
+
 
     def get_serializer_class(self):
         if self.request.method == 'PUT':
@@ -143,7 +152,6 @@ class SingleGameAPIView(RetrieveAPIView):
         
 
 
-    @permission_classes([AllowAny])
     def get(self, requset, *args, **kwargs):   
         """Получение одной игры со всеми полями"""
         checks = makeAllCheckes(kwargs, 'game_id', Game)
@@ -159,7 +167,7 @@ class SingleGameAPIView(RetrieveAPIView):
         content = decode_id(content)
         return Response(content)
     
-    @permission_classes([IsAuthenticated])
+
     def put(self, request, *args, **kwargs):
         """
         Изменить существующую игру по ID
@@ -181,7 +189,7 @@ class SingleGameAPIView(RetrieveAPIView):
 class QuestionsAPIView(CreateAPIView):
     queryset = Game.objects.all()
     #authentication_classes = [SessionAuthentication, BaseAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -240,12 +248,13 @@ class QuestionsAPIView(CreateAPIView):
 class PlayGameAPIView(CreateAPIView):
     queryset = TeamQuestionAnswer.objects.all()
     serializer_class = TeamQuestionAnswerSerializer
+    permission_classes = [AllowAny]
 
     def change_game_status(game):
         Game.objects.filter(pk=GamesSerializer(game).data['id']).update(is_over=True)
         return 
 
-    @permission_classes([AllowAny])
+
     def get(self, request, *args, **kwargs):
         """Получение всех записанных ответов команд"""
         checks = makeAllCheckes(kwargs, 'game_id', Game)
@@ -260,7 +269,7 @@ class PlayGameAPIView(CreateAPIView):
         return Response(content)
 
 
-    @permission_classes([IsAuthenticated])
+
     def post(self, request, *args, **kwargs):
         """Поменять ответ команды. Если объекта ответа нет в базе, то он создаётся"""
         checks = makeAllCheckes(kwargs, 'game_id', Game, checkGameForStatus=True, statuses=['planned', 'active'])
@@ -312,7 +321,8 @@ class PlayGameAPIView(CreateAPIView):
 class GameAddTeamAPIView(CreateAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamToGameSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
 
     def post(self, request, *args, **kwargs):
         """Записать команду на игру"""
@@ -361,3 +371,4 @@ class GameAddTeamAPIView(CreateAPIView):
 
         game.game_teams.remove(team)
         return Response(status=status.HTTP_204_NO_CONTENT)
+    #Убирать в поиске начальные и конечные пробелы
