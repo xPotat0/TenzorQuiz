@@ -6,7 +6,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer
+from .serializers import RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer, \
+    CustomTokenRefreshSerializer
 from .models import User
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -71,7 +72,7 @@ class LoginView(TokenObtainPairView):
             key='refresh_token',
             value=str(refresh_token),
             httponly=True,
-            secure=False,
+            secure=True,
             samesite='None',
             max_age=7 * 24 * 60 * 60 * 1000
         )
@@ -81,8 +82,8 @@ class LoginView(TokenObtainPairView):
 
 
 class RefreshTokenView(APIView):
-    serializer_class = TokenRefreshSerializer
-    permission_classes = (IsAuthenticated,)
+    serializer_class = CustomTokenRefreshSerializer
+    permission_classes = (AllowAny,)
 
     @swagger_auto_schema(
         operation_description="Обновление токенов",
@@ -110,19 +111,23 @@ class RefreshTokenView(APIView):
             return Response(data={"detail": "Пользователь не авторизован"}, status=status.HTTP_401_UNAUTHORIZED)
         serializer = self.serializer_class(data={'refresh': refresh_token})
         serializer.is_valid(raise_exception=True)
-        user = request.user
+        data = serializer.validated_data
+        user = data['user']
+        new_refresh_token = data['refresh']
+        new_access_token = data['access']
+        # user = request.user
         serializer = UserSerializer(user)
-        new_token = RefreshToken.for_user(user)
-        new_token.payload.update({'role': user.role})
+        # new_token = RefreshToken.for_user(user)
+        # new_token.payload.update({'role': user.role})
         response.set_cookie(
             key='refresh_token',
-            value=str(new_token),
+            value=new_refresh_token,
             httponly=True,
-            secure=False,
+            secure=True,
             samesite='None',
             max_age=7 * 24 * 60 * 60 * 1000
         )
-        response.data['access_token'] = str(new_token.access_token)
+        response.data['access_token'] = new_access_token
         response.data['user'] = serializer.data
         return response
 
