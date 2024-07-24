@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import status
+import settings
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -13,7 +14,7 @@ from rest_framework.generics import UpdateAPIView, RetrieveAPIView, CreateAPIVie
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
-from django.db.models import Q
+from django .db.models import Q
 import rest_framework_simplejwt.settings
 import jwt
 import rest_framework_simplejwt.tokens
@@ -138,13 +139,13 @@ class GamesAPIView(CreateAPIView):
         """
         Создание игры. Должно переводить в  .../games/{game_id}/ques/
         """
-        print(request.headers)
-        decoded_id = 2
-        request.data['game_creator'] = decoded_id
+        #print(request.headers)
+        #decoded_id = 2
+        #request.data['game_creator'] = decoded_id
 
         serializer = SingleGameSerializer(data=request.data)
-        #serializer.is_valid(raise_exception=True)
-        #serializer.save()
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
         return Response(serializer.data)
 
@@ -331,8 +332,15 @@ class PlayGameAPIView(CreateAPIView):
 class GameAddTeamAPIView(CreateAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamToGameSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            auth_user = request.user
+            print(auth_user.id)
+            team = Team.objects.get(captain_id=auth_user.id)
+            return Response({'team_id': TeamSerializer(team).data['team_id']}, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     def post(self, request, *args, **kwargs):
         """Записать команду на игру"""
