@@ -48,7 +48,7 @@ class NewsView(viewsets.ModelViewSet):
         if search is None:
             search = ''
         if order is None:
-            order = '-game_date'
+            order = '-news_date'
         if page is None:
             page = 1
         page = int(page)
