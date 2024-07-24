@@ -122,8 +122,12 @@ class GamesAPIView(CreateAPIView):
             page = 1
         page = int(page)
 
-
-        games = Game.objects.filter(game_name__icontains=search).order_by(order).all()[(page-1)*10:page*10]
+        words = search.strip().split() # можно разбить регуляркой
+        or_contains = Q()
+        for word in words:
+            or_contains |= Q(game_name__icontains=word)
+            
+        games = Game.objects.filter(or_contains).order_by(order).all()[(page-1)*10:page*10]
         content = GamesSerializer(games, many=True).data
         return Response(content)
     
