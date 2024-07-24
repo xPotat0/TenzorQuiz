@@ -1,11 +1,11 @@
-from django.db.models import F, Case, When, FloatField
+from django.db.models import F, Case, When, FloatField, Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from main.models import User
 from .serializers import TeamSerializer, TeamListSerializer, TeamCreateSerializer, TeamUpdateSerializer, \
@@ -15,7 +15,6 @@ from teams.models import Team
 
 class TeamsListAPIView(APIView):
     queryset = Team.objects.all()
-    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         operation_description="Получение списка всех команд в порядке убывания набранных очков",
@@ -31,7 +30,11 @@ class TeamsListAPIView(APIView):
             page = 1
         page = int(page)
         teams = set_team_places()
-        teams_filtered = teams.filter(team_name__icontains=search).order_by(order).all()[(page - 1) * 10:page * 10]
+        words = search.strip().split() # можно разбить регуляркой
+        or_contains = Q()
+        for word in words:
+            or_contains |= Q(game_name__icontains=word)
+        teams_filtered = teams.filter(or_contains).order_by(order).all()[(page - 1) * 10:page * 10]
         serializer = TeamListSerializer(teams_filtered, many=True)
         try:
             auth_user = request.user
@@ -124,7 +127,7 @@ class TeamAPIView(APIView):
     responses={200: TeamSerializer()}
 )
 @api_view(['PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def join_team(request, *args, **kwargs):
     pk = kwargs.get("pk", None)
     if not pk:
