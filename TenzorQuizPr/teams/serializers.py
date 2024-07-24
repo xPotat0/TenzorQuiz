@@ -2,6 +2,7 @@ import base64
 
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+from rest_framework.validators import UniqueValidator
 
 from teams.models import Team
 from main.models import User
@@ -23,6 +24,12 @@ class TeamsSerializer(serializers.ModelSerializer):
 
 class TeamCreateSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
+    team_name = serializers.CharField(required=True, validators=[UniqueValidator(
+        queryset=Team.objects.all(), message='Команда с таким именем уже существует')
+    ])
+    captain_id = serializers.IntegerField(required=True, validators=[UniqueValidator(
+        queryset=Team.objects.all(), message='Можно быть капитаном только одной команды')
+    ])
 
     class Meta:
         model = Team

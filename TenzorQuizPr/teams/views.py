@@ -17,7 +17,7 @@ class TeamsListAPIView(APIView):
     queryset = Team.objects.all()
 
     @swagger_auto_schema(
-        operation_description="Получение списка всех команд в порядке убывания набранных очков",
+        operation_description="Получение списка всех команд в порядке убывания занимаемых мест",
         responses={200: TeamListSerializer(many=True)}
     )
     def get(self, request):
@@ -30,21 +30,13 @@ class TeamsListAPIView(APIView):
             page = 1
         page = int(page)
         teams = set_team_places()
-        words = search.strip().split() # можно разбить регуляркой
+        words = search.strip().split()
         or_contains = Q()
         for word in words:
             or_contains |= Q(team_name__icontains=word)
         teams_filtered = teams.filter(or_contains).order_by(order).all()[(page - 1) * 10:page * 10]
         serializer = TeamListSerializer(teams_filtered, many=True)
-        try:
-            auth_user = request.user
-            user_teams = User.objects.get(id=auth_user.id).teams.all()
-            user_team_data = TeamListSerializer(user_teams, many=True).data
-        except Exception as e:
-            user_team_data = []
-            # return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
-        return Response({'user_teams': user_team_data,
-                         'teams': serializer.data})
+        return Response({'teams': serializer.data})
 
     @swagger_auto_schema(
         operation_description="Создание новой команды. Обязательные поля - captain_id и team_name",
@@ -145,6 +137,50 @@ def join_team(request, *args, **kwargs):
         team_repr = TeamSerializer(team)
         return Response(data=team_repr.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def leave_team(request, *args, **kwargs):
+    pk = kwargs.get("pk", None)
+    if not pk:
+        return Response({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    auth_user = request.user
+    team = User.objects.get(id=auth_user.id).teams.all().filter(id=pk).first()
+    if not team:
+        return Response(status=status.HTTP_404_NOT_FOUND, data={f"Вы не состоите в данной команде"})
+    if team.captain_id == auth_user.id:
+        return Response(status=status.HTTP_400_BAD_REQUEST, data={"Капитан не может выходить из команды"})
+    team.team_members.remove(auth_user)
+    team.save()
+    team_repr = TeamSerializer(team)
+    return Response(status=status.HTTP_200_OK, data=team_repr.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def my_teams(request, *args, **kwargs):
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'Авторизуйтесь, чтобы просмотреть свои команды'})
+    search = request.query_params.get('search')
+    order = get_order(request)
+    page = request.query_params.get('page')
+    if search is None:
+        search = ''
+    if page is None:
+        page = 1
+    page = int(page)
+    words = search.strip().split()
+    or_contains = Q()
+    for word in words:
+        or_contains |= Q(team_name__icontains=word)
+    auth_user = request.user
+    user_teams = User.objects.get(id=auth_user.id).teams.all()
+    user_teams_filtered = user_teams.filter(or_contains).order_by(order).all()[(page - 1) * 10:page * 10]
+    data = TeamListSerializer(user_teams_filtered, many=True).data
+    return Response({'user_teams': data})
 
 
 def get_order(request):
