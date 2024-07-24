@@ -339,7 +339,7 @@ class GameAddTeamAPIView(CreateAPIView):
             auth_user = request.user
             print(auth_user.id)
             team = Team.objects.get(captain_id=auth_user.id)
-            return Response({'team_id': TeamSerializer(team).data['team_id']}, status=status.HTTP_200_OK)
+            return Response({'team_id': TeamsSerializer(team).data['team_id']}, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     def post(self, request, *args, **kwargs):
