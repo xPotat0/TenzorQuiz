@@ -4,6 +4,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import News
 from .serializers import NewsSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class IsLeading(permissions.BasePermission):
@@ -15,6 +16,7 @@ class NewsView(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsLeading]
+    parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(
         operation_description="Получить список всех новостей",
@@ -24,7 +26,11 @@ class NewsView(viewsets.ModelViewSet):
                 type=openapi.TYPE_ARRAY,
                 items=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={field: openapi.Schema(type=openapi.TYPE_STRING) for field in NewsSerializer().fields}
+                    properties={
+                        'title': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'image': openapi.Schema(type=openapi.TYPE_FILE),
+                    }
                 )
             )
         )}
