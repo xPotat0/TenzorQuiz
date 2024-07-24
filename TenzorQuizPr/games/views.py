@@ -30,6 +30,7 @@ from main.serializers import UserSerializer
 
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
+from drf_yasg import openapi
 
 
 def decode_id(content):
@@ -45,6 +46,37 @@ def decode_id(content):
         _content['game_questions'] = ques_list
         _content['game_teams'] = team_list
         return _content
+
+
+class ScheduledGamesAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Получить список запланированных игр",
+        responses={
+            200: openapi.Response(
+                description="Успешный ответ с списком запланированных игр",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'game_name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'game_description': openapi.Schema(type=openapi.TYPE_STRING),
+                            'game_date': openapi.Schema(type=openapi.TYPE_STRING, format='date-time'),
+                            'game_status': openapi.Schema(type=openapi.TYPE_STRING),
+                        }
+                    )
+                )
+            )
+        }
+    )
+    def get(self, request):
+        games = Game.objects.filter(game_status='planned')
+        serializer = GamesSerializer(games, many=True)
+        return Response(serializer.data)
+
 
 def checkGameStatus(game, needStatus):
     return SingleGameSerializer(game).data['game_status'] in needStatus
