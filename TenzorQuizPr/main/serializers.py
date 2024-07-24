@@ -4,6 +4,47 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 
 import settings
 from .models import User, Role
+from teams.serializers import TeamsSerializer
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='id', read_only=True)
+    user_name = serializers.CharField(source='username', read_only=True)
+    user_email = serializers.CharField(source='email', read_only=True)
+    user_role = serializers.SerializerMethodField()
+    user_gender = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('user_id', 'user_name', 'user_email', 'user_role', 'user_gender')
+
+    def get_user_teams(self, obj):
+        user_teams = User.objects.get(id=obj.id).teams.all()
+        is_captain = False
+        for team in user_teams:
+            if obj.id == team.captain_id:
+                is_captain = True
+        user_team_data = TeamsSerializer(user_teams, many=True).data
+        return user_team_data, is_captain
+
+    def get_user_role(self, obj):
+        if obj.role == 'player':
+            return "Участник"
+        return "Ведущий"
+
+    def get_user_gender(self, obj):
+        if obj.gender == 'male':
+            return "Мужчина"
+        return "Женщина"
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='username', required=False)
+    user_gender = serializers.CharField(source='gender', required=False)
+
+    class Meta:
+        model = User
+        fields = ('user_name', 'user_gender')
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

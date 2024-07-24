@@ -6,11 +6,50 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer, \
-    CustomTokenRefreshSerializer
+    CustomTokenRefreshSerializer, UserProfileSerializer, UserProfileUpdateSerializer
 from .models import User
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Информация об авторизованном пользователе",
+        responses={200: UserProfileSerializer()}
+    )
+    def get(self, request):
+        if request.user.is_authenticated:
+            auth_user = request.user
+            serializer = UserProfileSerializer(auth_user)
+            data = serializer.data
+            user_team_data, is_captain = serializer.get_user_teams(auth_user)
+            data['is_captain'] = is_captain
+            data['user_teams'] = user_team_data
+            return Response(data=data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    @swagger_auto_schema(
+        operation_description="Изменение имени пользователя и пола",
+        request_body=UserProfileUpdateSerializer,
+        responses={200: UserProfileSerializer()}
+    )
+    def patch(self, request):
+        if request.user.is_authenticated:
+            auth_user = request.user
+            serializer = UserProfileUpdateSerializer(data=request.data, instance=auth_user, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                user_repr = UserProfileSerializer(auth_user)
+                user_repr_data = user_repr.data
+                user_team_data, is_captain = user_repr.get_user_teams(auth_user)
+                user_repr_data['is_captain'] = is_captain
+                user_repr_data['user_teams'] = user_team_data
+                return Response(data=user_repr_data, status=status.HTTP_200_OK)
+            # return Response(data=user_repr.errors, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 class RegisterView(APIView):
