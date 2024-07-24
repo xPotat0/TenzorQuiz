@@ -1,12 +1,21 @@
+from datetime import datetime
+
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+
+from games.models import Game
+from games.serializers import GamesSerializer
 from .models import News
 from .serializers import NewsSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import filters
 from django.db.models import Q
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
 
 
 class IsLeading(permissions.BasePermission):
@@ -61,6 +70,7 @@ class NewsView(viewsets.ModelViewSet):
 
         news = News.objects.filter(or_contains).order_by(order).all()[(page-1)*10:page*10]
         content = NewsSerializer(news, many=True).data
+
         return super().list(request, content, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -168,3 +178,76 @@ class NewsView(viewsets.ModelViewSet):
         Удаляет конкретную новость по её ID.
         """
         return super().destroy(request, *args, **kwargs)
+
+
+class NewsAndScheduledGamesAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Получить список новостей и запланированных игр с возможностью поиска, сортировки и пагинации",
+        manual_parameters=[
+            openapi.Parameter('search', openapi.IN_QUERY, description="Поисковый запрос", type=openapi.TYPE_STRING),
+            openapi.Parameter('ordering', openapi.IN_QUERY, description="Поле для сортировки", type=openapi.TYPE_STRING),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Номер страницы для пагинации", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Успешный ответ с списком новостей и запланированных игр",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'news': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'title': openapi.Schema(type=openapi.TYPE_STRING),
+                                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                'image': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                            }
+                        ),
+                        'scheduled_games': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'game_name': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'game_description': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'game_date': openapi.Schema(type=openapi.TYPE_STRING, format='date-time'),
+                                    'game_status': openapi.Schema(type=openapi.TYPE_STRING),
+                                }
+                            )
+                        ),
+                    }
+                )
+            )
+        }
+    )
+    def get(self, request):
+        # Получение параметров поиска, сортировки и пагинации
+        search = request.query_params.get('search', '')
+        ordering = request.query_params.get('ordering', '-publication_date')
+
+        # Создание фильтра поиска
+        words = search.strip().split()
+        or_contains = Q()
+        for word in words:
+            or_contains |= Q(title__icontains=word) | Q(description__icontains=word)
+
+        # Применение фильтра поиска и сортировки
+        news_queryset = News.objects.filter(or_contains).order_by(ordering)
+
+        # Пагинация
+        paginator = PageNumberPagination()
+        paginator.page_size = 6
+        paginated_news = paginator.paginate_queryset(news_queryset, request)
+        news_serializer = NewsSerializer(paginated_news, many=True)
+
+        # Получение запланированных игр
+        games = Game.objects.filter(game_status='planned')
+        games_serializer = GamesSerializer(games, many=True)
+
+        return Response({
+            'news': news_serializer.data,
+            'scheduled_games': games_serializer.data
+        })
