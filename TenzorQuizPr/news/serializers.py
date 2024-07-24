@@ -7,6 +7,7 @@ User = get_user_model()
 
 class NewsSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = News
