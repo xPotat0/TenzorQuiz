@@ -1,12 +1,13 @@
+from django.db.models import F, Case, When, FloatField
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from rest_framework.permissions import AllowAny
 
+from main.models import User
 from .serializers import TeamSerializer, TeamListSerializer, TeamCreateSerializer, TeamUpdateSerializer, \
     TeamJoinSerializer
 from teams.models import Team
@@ -15,7 +16,6 @@ from teams.models import Team
 class TeamsListAPIView(APIView):
     queryset = Team.objects.all()
     permission_classes = [AllowAny]
-
 
     @swagger_auto_schema(
         operation_description="Получение списка всех команд в порядке убывания набранных очков",
@@ -27,18 +27,21 @@ class TeamsListAPIView(APIView):
         page = request.query_params.get('page')
         if search is None:
             search = ''
-        # if order is None:
-        #     if order == 'creation_date':
-        #         order = '-creation_date'
-        #     order = '-points'
         if page is None:
             page = 1
         page = int(page)
-
-        teams = Team.objects.filter(team_name__icontains=search).order_by(order).all()[(page - 1) * 10:page * 10]
-        # teams = Team.objects.all()
-        serializer = TeamListSerializer(teams, many=True)
-        return Response({'teams': serializer.data})
+        teams = set_team_places()
+        teams_filtered = teams.filter(team_name__icontains=search).order_by(order).all()[(page - 1) * 10:page * 10]
+        serializer = TeamListSerializer(teams_filtered, many=True)
+        try:
+            auth_user = request.user
+            user_teams = User.objects.get(id=auth_user.id).teams.all()
+            user_team_data = TeamListSerializer(user_teams, many=True).data
+        except Exception as e:
+            user_team_data = []
+            # return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
+        return Response({'user_teams': user_team_data,
+                         'teams': serializer.data})
 
     @swagger_auto_schema(
         operation_description="Создание новой команды. Обязательные поля - captain_id и team_name",
@@ -52,19 +55,6 @@ class TeamsListAPIView(APIView):
             team_repr = TeamSerializer(team)
             return Response(team_repr.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-def get_order(request):
-    order = request.query_params.get('ordering')
-    if order is None or order == 'points':
-        return '-points'
-    elif order == 'creation_date':
-        return '-creation_date'
-    elif order == 'played_games':
-        return '-played_games'
-    elif order == 'team_name':
-        return order
-
 
 
 class TeamAPIView(APIView):
@@ -153,39 +143,30 @@ def join_team(request, *args, **kwargs):
         return Response(data=team_repr.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#
-# @swagger_auto_schema(
-#     method='patch',
-#     operation_description="Join team",
-#     request_body=openapi.Schema(
-#         type=openapi.TYPE_OBJECT,
-#         properties={
-#             'user_id': openapi.Schema(type=openapi.TYPE_INTEGER)}),
-#     responses={200: openapi.Schema(
-#         type=openapi.TYPE_OBJECT,
-#         properties={
-#             'team_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-#             'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-#         })
-#     }
-# )
-# @api_view(['PATCH'])
-# def join_team(request, *args, **kwargs):
-#     pk = kwargs.get("pk", None)
-#     if not pk:
-#         return Response({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-#     try:
-#         team = Team.objects.get(pk=pk)
-#     except Team.DoesNotExist:
-#         return Response(status=status.HTTP_404_NOT_FOUND, data={
-#             "detail": f"Команды c id {pk} не существует "
-#         })
-#
-#     user_id = request.data.get('user_id')
-#     if not user_id:
-#         return Response({"error": "Поле user_id обязательно"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-#     serializer = TeamJoinSerializer(partial=True)
-#     serializer.add_member(user_id=user_id, team=team)
-#
-#     return Response({'team_id': pk,
-#                      'user_id': user_id})
+
+def get_order(request):
+    order = request.query_params.get('ordering')
+    if order is None:
+        return 'place'
+    elif order == 'points':
+        return '-points'
+    elif order == 'creation_date':
+        return '-creation_date'
+    elif order == 'played_games':
+        return '-played_games'
+    elif order == 'team_name' or order == 'place':
+        return order
+
+
+def set_team_places():
+    teams = Team.objects.annotate(
+        av_points=Case(
+            When(played_games__gt=0, then=F('points') / F('played_games')),
+            default=0,
+            output_field=FloatField()
+        )).order_by('-av_points')
+    for index, val in enumerate(teams):
+        val.place = index + 1
+        val.save()
+    return teams
+

@@ -1,6 +1,7 @@
+import base64
+
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
-from rest_framework.validators import UniqueValidator
 
 from teams.models import Team
 from main.models import User
@@ -22,11 +23,6 @@ class TeamsSerializer(serializers.ModelSerializer):
 
 class TeamCreateSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
-    captain_id = serializers.IntegerField(required=True, validators=[UniqueValidator(
-        queryset=Team.objects.all(), message='Команда с таким captain_id уже существует.')
-    ])
-    # team_name = serializers.CharField(source='name', required=True, validators=[UniqueValidator(
-    #     queryset=Team.objects.all(), message='Команда с таким названием уже существует.')])
 
     class Meta:
         model = Team
@@ -47,8 +43,6 @@ class TeamCreateSerializer(serializers.ModelSerializer):
 
 class TeamUpdateSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
-    # team_name = serializers.CharField(source='name', required=False)
-    # team_desc = serializers.CharField(source='description', required=False)
 
     class Meta:
         model = Team
@@ -57,10 +51,8 @@ class TeamUpdateSerializer(serializers.ModelSerializer):
 
 class TeamSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
-    # team_name = serializers.CharField(source='name')
-    # team_desc = serializers.CharField(source='description', required=False)
     team_points = serializers.FloatField(source='points', read_only=True)
-    team_rating = serializers.IntegerField(source='rating', read_only=True)
+    team_place = serializers.IntegerField(source='place', read_only=True)
     team_played_games = serializers.IntegerField(source='played_games', read_only=True)
     team_captain_id = serializers.IntegerField(source='captain_id', read_only=True)
     team_captain_name = serializers.CharField(source='get_captain_name', read_only=True)
@@ -76,23 +68,23 @@ class TeamSerializer(serializers.ModelSerializer):
                   'team_desc',
                   'team_creation_date',
                   'team_points',
-                  'team_rating',
+                  'team_place',
                   'team_played_games',
                   'team_members')
 
 
 class TeamListSerializer(serializers.ModelSerializer):
     team_id = serializers.IntegerField(source='id', read_only=True)
+    team_place = serializers.IntegerField(source='place', read_only=True)
     team_desc = serializers.CharField(source='description', read_only=True)
     team_played_games = serializers.IntegerField(source='played_games', read_only=True)
     team_points = serializers.FloatField(source='points', read_only=True)
-    team_rating = serializers.IntegerField(source='rating', read_only=True)
     team_creation_date = serializers.DateField(source='creation_date', read_only=True)
 
     class Meta:
         model = Team
-        fields = ('team_id', 'captain_id',
-                  'team_name', 'team_desc', 'team_creation_date', 'team_played_games', 'team_points', 'team_rating')
+        fields = ('team_id', 'captain_id', 'team_place',
+                  'team_name', 'team_desc', 'team_creation_date', 'team_played_games', 'team_points')
 
 
 class TeamJoinSerializer(serializers.ModelSerializer):
@@ -102,12 +94,6 @@ class TeamJoinSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ('team_id', 'user_id')
-
-    def validate_user_id(self, value):
-        member = Team.objects.filter(team_members__id=value).first()
-        if member is not None:
-            raise serializers.ValidationError('Пользователь в таким user_id уже есть в команде')
-        return value
 
     def add_member(self, user_id, team: Team):
         try:
