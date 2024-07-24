@@ -5,6 +5,7 @@ from drf_yasg import openapi
 from .models import News
 from .serializers import NewsSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import filters
 
 
 class IsLeading(permissions.BasePermission):
@@ -15,6 +16,7 @@ class IsLeading(permissions.BasePermission):
 class NewsView(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
+    filter_backends = [filters.SearchFilter]
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsLeading]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -39,7 +41,21 @@ class NewsView(viewsets.ModelViewSet):
         """
         Получает список всех новостей.
         """
-        return super().list(request, *args, **kwargs)
+
+        search = request.query_params.get('search')
+        order = request.query_params.get('ordering')
+        page = request.query_params.get('page')
+        if search is None:
+            search = ''
+        if order is None:
+            order = '-game_date'
+        if page is None:
+            page = 1
+        page = int(page)
+
+        news = News.objects.filter(game_name__icontains=search).order_by(order).all()[(page - 1) * 10:page * 10]
+        content = NewsSerializer(news, many=True).data
+        return super().list(request, content, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_description="Создать новую новость",
