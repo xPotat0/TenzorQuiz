@@ -33,6 +33,7 @@ class RegisterView(APIView):
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = (AllowAny,)
 
     @swagger_auto_schema(
         operation_description="Авторизация",
