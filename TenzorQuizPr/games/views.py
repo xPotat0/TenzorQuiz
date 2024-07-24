@@ -13,6 +13,7 @@ from rest_framework.generics import UpdateAPIView, RetrieveAPIView, CreateAPIVie
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
+from django.db.models import Q
 import rest_framework_simplejwt.settings
 import jwt
 import rest_framework_simplejwt.tokens
