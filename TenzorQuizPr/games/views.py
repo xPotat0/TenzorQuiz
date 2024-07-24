@@ -337,8 +337,11 @@ class GameAddTeamAPIView(CreateAPIView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             auth_user = request.user
-            print(auth_user.id)
-            team = Team.objects.get(captain_id=auth_user.id)
+            team = Team
+            try:
+                team = Team.objects.get(captain_id=auth_user.id)
+            except:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response({'team_id': TeamsSerializer(team).data['team_id']}, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
