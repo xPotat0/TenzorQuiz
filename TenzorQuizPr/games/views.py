@@ -13,6 +13,9 @@ from rest_framework.generics import UpdateAPIView, RetrieveAPIView, CreateAPIVie
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
+import rest_framework_simplejwt.settings
+import jwt
+import rest_framework_simplejwt.tokens
 from json import loads
 
 from .models import Game, Question, TeamQuestionAnswer
@@ -130,11 +133,13 @@ class GamesAPIView(CreateAPIView):
         """
         Создание игры. Должно переводить в  .../games/{game_id}/ques/
         """
+        print(request.headers)
+        decoded_id = 2
+        request.data['game_creator'] = decoded_id
 
-
-        serializer = GamesSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer = SingleGameSerializer(data=request.data)
+        #serializer.is_valid(raise_exception=True)
+        #serializer.save()
 
         return Response(serializer.data)
 
