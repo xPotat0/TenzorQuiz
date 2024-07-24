@@ -33,7 +33,7 @@ class TeamsListAPIView(APIView):
         words = search.strip().split() # можно разбить регуляркой
         or_contains = Q()
         for word in words:
-            or_contains |= Q(game_name__icontains=word)
+            or_contains |= Q(team_name__icontains=word)
         teams_filtered = teams.filter(or_contains).order_by(order).all()[(page - 1) * 10:page * 10]
         serializer = TeamListSerializer(teams_filtered, many=True)
         try:
