@@ -24,7 +24,7 @@ from .models import Game, Question, TeamQuestionAnswer
 from teams.models import Team
 from main.models import User
 
-from .serializers import GamesSerializer, SingleGameSerializer, QuestionsSerializer, TeamQuestionAnswerSerializer, DeleteQuestionSerializer, TeamToGameSerializer
+from .serializers import GamesSerializer, SingleGameSerializer, QuestionsSerializer, TeamQuestionAnswerSerializer, DeleteQuestionSerializer, TeamToGameSerializer, PlannedGameDetailSerializer
 from teams.serializers import TeamsSerializer, TeamSerializer
 from main.serializers import UserSerializer
 
