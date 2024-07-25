@@ -350,7 +350,7 @@ class PlayGameAPIView(CreateAPIView):
         except:
             return Response({'error': 'Question not exists'}, status=status.HTTP_404_NOT_FOUND)
 
-        is_correct = question.question_correct_answer == decoded_request['answer_team_answer']
+        is_correct = bool(question.question_correct_answer) #== decoded_request['answer_team_answer']
 
         obj, created = TeamQuestionAnswer.objects.update_or_create(
             game_id=game,
