@@ -182,6 +182,21 @@ class GamesAPIView(CreateAPIView):
         return Response(serializer.data)
 
 
+class PlannedGameDetailAPIView(RetrieveAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = PlannedGameDetailSerializer
+    queryset = Game.objects.filter(game_status='planned')
+    lookup_field = 'id'
+
+    def get(self, request, *args, **kwargs):
+        try:
+            game = self.get_queryset().get(id=kwargs['id'])
+            serializer = self.get_serializer(game)
+            return Response(serializer.data)
+        except Game.DoesNotExist:
+            raise NotFound(detail="Game not found or not planned")
+
+
 class SingleGameAPIView(RetrieveAPIView):
     queryset = Game.objects.all()
     permission_classes = [AllowAny]
