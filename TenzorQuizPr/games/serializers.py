@@ -14,6 +14,11 @@ class SingleGameSerializer(serializers.ModelSerializer):
         model = Game
         fields = '__all__'
 
+class PlannedGameDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ['id', 'game_name', 'game_description', 'game_status']
+
 class QuestionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
