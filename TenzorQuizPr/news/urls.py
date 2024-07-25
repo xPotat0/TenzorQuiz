@@ -1,6 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import NewsView
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 router = DefaultRouter()
 router.register(r'news', NewsView)
@@ -8,3 +11,7 @@ router.register(r'news', NewsView)
 urlpatterns = [
     path('api/v1/', include(router.urls)),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
